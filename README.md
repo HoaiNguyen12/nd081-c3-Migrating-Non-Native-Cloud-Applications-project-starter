@@ -32,7 +32,7 @@ You will need to install the following locally:
    - Restore the database with the backup located in the data folder
 3. Create a Service Bus resource with a `notificationqueue` that will be used to communicate between the web and the function
    - Open the web folder and update the following in the `config.py` file
-      - `POSTGRES_URL`
+      - `   `
       - `POSTGRES_USER`
       - `POSTGRES_PW`
       - `POSTGRES_DB`
@@ -61,11 +61,18 @@ You will need to install the following locally:
 ## Monthly Cost Analysis
 Complete a month cost analysis of each Azure resource to give an estimate total cost using the table below:
 
-| Azure Resource | Service Tier | Monthly Cost |
-| ------------ | ------------ | ------------ |
-| *Azure Postgres Database* |     |              |
-| *Azure Service Bus*   |         |              |
-| ...                   |         |              |
-
+| Azure Resource           | Service Tier                                                 | Monthly Cost |
+| ------------             | ------------                                                 | ------------ |
+| Azure Postgres Database  | Single Server - Basic - 1 vCore - 5 GB                       |     35.32    |
+| Azure Service Bus        | Basic - Max Msg Size 256kb - 1M Ops                          |     0.05     |
+| App Function             | Basic - 1vCpu - 1.75Gb Memory - 10Gb Storage - 3 Instances   |       0      |
+| Azure Web App            | Free                                                         |       0      |
+| Storage Accounts         | StorageV2 (general purpose v2)                               |     21.84    |
 ## Architecture Explanation
-This is a placeholder section where you can provide an explanation and reasoning for your architecture selection for both the Azure Web App and Azure Function.
+This is a placeholder section where you can provide an explanation and reasoning for your architecture selection for both the Azure Web App and Azure Function:
+
+1. Web client as App Service: Since the purpose of the client is mostly create new notification and query notifications and attendees from database, the web traffic reqired is not too high. Therefore, Free Tier App Service is enough for these processes. CRUD action to attendees and notifications table are the most used functions in the client, so the budget should focus more on database and background process.
+2. Postgres DB: Because of the logic is much focus on query data, single server database should be enough. I choose the minimun specs in Basic plans because it is more budget friendly, and the data scaling of this project in the future is not so big that HyperScale or Multi-server database server is needed
+3. Azure Function App: Based on the logic of the app, the background process requires more resources than the web client. The function app and Service Bus plan should base on how much emails and attendees are estimated. Due to the current size of the database, Basic plans for both of these services should be more than enough. In addition, these services are also very easy to scale up if more resources are required without having to scale the app service. But for now, Basic plans is most optimized and budget-friendly.
+4. Azure Service Bus: Since I split the app into web client for query and create notifications and attendees, and azure functions to process the background jobs, a service bus is needed to communicate between the web app and the function. The service bus is used to send a message whenever a new notification is created in the web app, and to listen to the message in the notification queue to execute the accordingly function.
+5. Azure Storage Account: I use azure storage account to store webjobs-host and secret only, so most of the time the read and write action to storage account is not needed. Therefore, the minimum spec is enough.
